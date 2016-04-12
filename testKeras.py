@@ -45,7 +45,7 @@ train_labels = np_utils.to_categorical(train_labels, 10)
 # test_inputs = test_inputs.reshape(len(test_inputs), 1, 96, 96)
 # test_labels = np_utils.to_categorical(test_labels, 10)
 
-cv = cross_validation.KFold(len(train_labels), n_folds = 10, shuffle=True)
+cv = cross_validation.KFold(len(train_labels), n_folds = 5, shuffle=True)
 
 i = 1
 for trainCV, validCV in cv:
@@ -55,9 +55,10 @@ for trainCV, validCV in cv:
     cv_valid_inputs = train_inputs[validCV]
     cv_valid_labels = train_labels[validCV]
     model = creat_model()
-    model.fit(cv_train_inputs, cv_train_labels,
-          batch_size=50, nb_epoch=100, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
+    history = model.fit(cv_train_inputs, cv_train_labels,
+          batch_size=50, nb_epoch=50, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
     i += 1
+
 
 
 # model.fit(train_inputs, train_labels,
