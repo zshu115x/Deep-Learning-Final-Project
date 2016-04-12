@@ -56,7 +56,7 @@ for trainCV, validCV in cv:
     cv_valid_labels = train_labels[validCV]
     model = creat_model()
     model.fit(cv_train_inputs, cv_train_labels,
-          batch_size=50, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
+          batch_size=50, nb_epoch=100, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
     i += 1
 
 
