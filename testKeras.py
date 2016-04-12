@@ -21,7 +21,6 @@ def creat_model():
     model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-
     model.add(Flatten())
     model.add(Dense(1000))
     model.add(Activation("relu"))
@@ -34,6 +33,7 @@ def creat_model():
     sgd = SGD(lr=0.1)
     model.compile(loss="msle", optimizer=sgd)
     return model
+
 
 train_inputs, train_labels, test_inputs, test_labels = load_labled_data(grayscale=True)
 
@@ -58,6 +58,7 @@ for trainCV, validCV in cv:
     model.fit(cv_train_inputs, cv_train_labels,
           batch_size=50, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
     i += 1
+
 
 # model.fit(train_inputs, train_labels,
 #           batch_size=20, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(test_inputs, test_labels))
