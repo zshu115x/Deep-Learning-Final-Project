@@ -37,7 +37,7 @@ def load_labled_data(grayscale = False):
     if grayscale:
         return grayScaler(train_inputs)/255.0, train_labels - 1, grayScaler(test_inputs)/255.0, test_labels - 1
     else:
-        return train_inputs, train_labels - 1, test_inputs, test_labels - 1
+        return train_inputs/255.0, train_labels - 1, test_inputs/255.0, test_labels - 1
 
 def load_unlabeld_data():
     data = stl10_input.read_all_images(unlabeled_X_path)
