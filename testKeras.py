@@ -1,10 +1,10 @@
+#!/usr/share/anaconda2/bin/python
+
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Convolution2D, MaxPooling2D, Flatten
 from keras.optimizers import SGD
 from keras.utils import np_utils
 from sklearn import cross_validation
-
-
 
 from STL_loader import load_labled_data
 
@@ -43,16 +43,19 @@ train_labels = np_utils.to_categorical(train_labels, 10)
 # test_inputs = test_inputs.reshape(len(test_inputs), 1, 96, 96)
 # test_labels = np_utils.to_categorical(test_labels, 10)
 
-cv = cross_validation.KFold(len(train_labels), n_folds = 5, shuffle=True)
+cv = cross_validation.KFold(len(train_labels), n_folds = 10, shuffle=True)
 
+i = 1
 for trainCV, validCV in cv:
+    print "fold {}".format(i)
     cv_train_inputs = train_inputs[trainCV]
     cv_train_labels = train_labels[trainCV]
     cv_valid_inputs = train_inputs[validCV]
     cv_valid_labels = train_labels[validCV]
     model.clear_previous()
     model.fit(cv_train_inputs, cv_train_labels,
-          batch_size=1000, nb_epoch=1, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
+          batch_size=50, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
+    i += 1
 
 # model.fit(train_inputs, train_labels,
 #           batch_size=20, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(test_inputs, test_labels))
