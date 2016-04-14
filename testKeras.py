@@ -1,4 +1,3 @@
-#!/usr/share/anaconda2/bin/python
 
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Convolution2D, MaxPooling2D, Flatten
@@ -52,16 +51,14 @@ if grayscale:
     train_inputs = train_inputs.reshape(len(train_inputs),n_channels,96,96)
 else:
     """transform (96, 96, 3) to (3, 96, 96)"""
-    train_inputs = np.array([[z.transpose() for z in x.transpose()] for x in train_inputs])
+    train_inputs = np.rollaxis(train_inputs, axis = 3, start=1)
 
 train_labels = np_utils.to_categorical(train_labels, 10)
-
 
 # test_inputs = test_inputs.reshape(len(test_inputs), 1, 96, 96)
 # test_labels = np_utils.to_categorical(test_labels, 10)
 
 cv = cross_validation.KFold(len(train_labels), n_folds = 5, shuffle=True)
-
 
 i = 1
 for trainCV, validCV in cv:
@@ -72,7 +69,7 @@ for trainCV, validCV in cv:
     cv_valid_labels = train_labels[validCV]
     model = creat_model()
     model.fit(cv_train_inputs, cv_train_labels,
-          batch_size=50, nb_epoch=50, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
+          batch_size=50, nb_epoch=100, verbose=1, validation_data=(cv_valid_inputs, cv_valid_labels))
     i += 1
 
 
