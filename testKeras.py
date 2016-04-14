@@ -20,17 +20,19 @@ def creat_model():
     model.add(Convolution2D(64, 5, 5))
     model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
 
     model.add(Flatten())
     model.add(Dense(1000))
     model.add(Activation("relu"))
     model.add(Dense(100))
     model.add(Activation("relu"))
+    model.add(Dropout(0.5))
 
     model.add(Dense(10))
     model.add(Activation("softmax"))
 
-    sgd = SGD(lr=0.1)
+    sgd = SGD(lr=0.1, momentum=0.9, nesterov=True)
     model.compile(loss="msle", optimizer=sgd)
     return model
 
@@ -47,6 +49,7 @@ train_labels = np_utils.to_categorical(train_labels, 10)
 
 cv = cross_validation.KFold(len(train_labels), n_folds = 5, shuffle=True)
 
+
 i = 1
 for trainCV, validCV in cv:
     print "fold {}".format(i)
@@ -55,7 +58,7 @@ for trainCV, validCV in cv:
     cv_valid_inputs = train_inputs[validCV]
     cv_valid_labels = train_labels[validCV]
     model = creat_model()
-    history = model.fit(cv_train_inputs, cv_train_labels,
+    model.fit(cv_train_inputs, cv_train_labels,
           batch_size=50, nb_epoch=50, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
     i += 1
 
