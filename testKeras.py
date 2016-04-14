@@ -51,6 +51,7 @@ train_inputs, train_labels, test_inputs, test_labels = load_labled_data(grayscal
 if grayscale:
     train_inputs = train_inputs.reshape(len(train_inputs),n_channels,96,96)
 else:
+    """transform (96, 96, 3) to (3, 96, 96)"""
     train_inputs = np.array([[z.transpose() for z in x.transpose()] for x in train_inputs])
 
 train_labels = np_utils.to_categorical(train_labels, 10)
