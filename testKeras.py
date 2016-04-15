@@ -3,16 +3,42 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Convolution2D, MaxPooling2D, Flatten
 from keras.optimizers import SGD
 from keras.utils import np_utils
-from sklearn import cross_validation
+from sklearn import cross_validation, metrics
+from keras import backend as K
+
 
 from STL_loader import load_labled_data
 
 import numpy as np
+import pandas as pd
+import json
 
 grayscale = False
 n_channels = 3
 if grayscale:
     n_channels = 1
+
+label_names=["airplane", "bird", "car", "cat", "deer", "dog", "horse", "monkey", "ship", "truck"]
+
+def udf_softmax(output):
+    return [np.argmax(x) for x in output]
+
+def udf_matrix(y_true, y_pred):
+    matrix = metrics.confusion_matrix(y_true, y_pred)
+    return pd.DataFrame(matrix, index=label_names, columns=label_names)
+
+def show_confusionMatrix(model, inputs, labels):
+    """
+    show confusionMatrix given the model, inputs and the corresonding labels
+    :param model:
+    :param inputs:
+    :param labels:
+    :return:
+    """
+    get_last_layer_output = K.function([model.layers[0].input], [model.layers[-1].get_output(train=False)])
+    output = get_last_layer_output([inputs])[0]
+
+    print udf_matrix(udf_softmax(labels), udf_softmax(output))
 
 def creat_model():
     model = Sequential()
@@ -39,7 +65,7 @@ def creat_model():
     model.add(Activation("softmax"))
 
     sgd = SGD(lr=0.1, momentum=0.9, nesterov=True)
-    model.compile(loss="msle", optimizer=sgd, metrics = ["accuracy"])
+    model.compile(loss="msle", optimizer=sgd)
     return model
 
 
@@ -60,6 +86,7 @@ train_labels = np_utils.to_categorical(train_labels, 10)
 
 cv = cross_validation.KFold(len(train_labels), n_folds = 5, shuffle=True)
 
+hists_cv = []
 i = 1
 for trainCV, validCV in cv:
     print "fold {}".format(i)
@@ -68,11 +95,13 @@ for trainCV, validCV in cv:
     cv_valid_inputs = train_inputs[validCV]
     cv_valid_labels = train_labels[validCV]
     model = creat_model()
-    model.fit(cv_train_inputs, cv_train_labels,
-          batch_size=50, nb_epoch=100, verbose=1, validation_data=(cv_valid_inputs, cv_valid_labels))
+    hist = model.fit(cv_train_inputs, cv_train_labels,
+          batch_size=50, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
+
+    hists_cv.append(hist.history.values())
     i += 1
 
-
-
+with open('data/log.txt', 'w') as outfile:
+    json.dump(hists_cv, outfile)
 # model.fit(train_inputs, train_labels,
 #           batch_size=20, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(test_inputs, test_labels))
