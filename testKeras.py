@@ -1,16 +1,15 @@
 
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Convolution2D, MaxPooling2D, Flatten
+from keras.layers import Dense, Dropout, Activation, Convolution2D, MaxPooling2D, Flatten, AutoEncoder
 from keras.optimizers import SGD
 from keras.utils import np_utils
 from sklearn import cross_validation, metrics
 from keras import backend as K
 
-
-from STL_loader import load_labled_data
+from STL_loader import load_labeld_data
 
 import numpy as np
-import pandas as pd
+from pandas import DataFrame
 import json
 
 grayscale = False
@@ -25,7 +24,7 @@ def udf_softmax(output):
 
 def udf_matrix(y_true, y_pred):
     matrix = metrics.confusion_matrix(y_true, y_pred)
-    return pd.DataFrame(matrix, index=label_names, columns=label_names)
+    return DataFrame(matrix, index=label_names, columns=label_names)
 
 def show_confusionMatrix(model, inputs, labels):
     """
@@ -51,7 +50,7 @@ def creat_model():
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Convolution2D(64, 5, 5))
     model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(MaxPooling2D(pool_size=(1, 1)))
     model.add(Dropout(0.25))
 
     model.add(Flatten())
@@ -59,49 +58,59 @@ def creat_model():
     model.add(Activation("relu"))
     model.add(Dense(100))
     model.add(Activation("relu"))
-    model.add(Dropout(0.5))
+    model.add(Dropout(0.4))
 
     model.add(Dense(10))
     model.add(Activation("softmax"))
 
-    sgd = SGD(lr=0.1, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=0.1, momentum=0.8, nesterov=True)
     model.compile(loss="msle", optimizer=sgd)
     return model
 
+def data_loader():
+    train_inputs, train_labels, test_inputs, test_labels = load_labeld_data(grayscale)
 
-train_inputs, train_labels, test_inputs, test_labels = load_labled_data(grayscale)
+    if grayscale:
+        train_inputs = train_inputs.reshape(len(train_inputs),n_channels,96,96)
+        test_inputs = test_inputs.reshape(len(test_inputs), n_channels, 96, 96)
+    else:
+        """transform (96, 96, 3) to (3, 96, 96)"""
+        train_inputs = np.rollaxis(train_inputs, axis = 3, start=1)
+        test_inputs = np.rollaxis(test_inputs, axis = 3, start=1)
+    # convert class vactors to binary class matrices
+    train_labels = np_utils.to_categorical(train_labels, 10)
+    test_labels = np_utils.to_categorical(test_labels, 10)
+
+    return train_inputs, train_labels, test_inputs, test_labels
 
 
-# convert class vactors to binary class matrices
-if grayscale:
-    train_inputs = train_inputs.reshape(len(train_inputs),n_channels,96,96)
-else:
-    """transform (96, 96, 3) to (3, 96, 96)"""
-    train_inputs = np.rollaxis(train_inputs, axis = 3, start=1)
+def CV_run(train_inputs, train_labels, n_folds = 10):
+    cv = cross_validation.KFold(len(train_labels), n_folds = n_folds, shuffle=True)
+    hists_cv = []
+    i = 1
+    for trainCV, validCV in cv:
+        print "fold {}".format(i)
+        cv_train_inputs = train_inputs[trainCV]
+        cv_train_labels = train_labels[trainCV]
+        cv_valid_inputs = train_inputs[validCV]
+        cv_valid_labels = train_labels[validCV]
+        model = creat_model()
+        hist = model.fit(cv_train_inputs, cv_train_labels,
+              batch_size=50, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
 
-train_labels = np_utils.to_categorical(train_labels, 10)
+        hists_cv.append(hist.history.values())
+        i += 1
+    with open('data/log.txt', 'w') as outfile:
+        json.dump(hists_cv, outfile)
 
-# test_inputs = test_inputs.reshape(len(test_inputs), 1, 96, 96)
-# test_labels = np_utils.to_categorical(test_labels, 10)
 
-cv = cross_validation.KFold(len(train_labels), n_folds = 5, shuffle=True)
-
-hists_cv = []
-i = 1
-for trainCV, validCV in cv:
-    print "fold {}".format(i)
-    cv_train_inputs = train_inputs[trainCV]
-    cv_train_labels = train_labels[trainCV]
-    cv_valid_inputs = train_inputs[validCV]
-    cv_valid_labels = train_labels[validCV]
+def run(train_inputs, train_labels, test_inputs, test_labels):
     model = creat_model()
-    hist = model.fit(cv_train_inputs, cv_train_labels,
-          batch_size=50, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
 
-    hists_cv.append(hist.history.values())
-    i += 1
+    hist = model.fit(train_inputs, train_labels, batch_size=50, nb_epoch=50,
+                     verbose=1, show_accuracy=True, validation_data=(test_inputs, test_labels))
 
-with open('data/log.txt', 'w') as outfile:
-    json.dump(hists_cv, outfile)
-# model.fit(train_inputs, train_labels,
-#           batch_size=20, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(test_inputs, test_labels))
+    show_confusionMatrix(model, test_inputs, test_labels)
+
+    with open('data/log.txt', 'w') as outfile:
+        json.dump(hist, outfile)
