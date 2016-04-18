@@ -23,7 +23,7 @@ def unzip_data():
     """
     tarfile.open("data/stl10_binary.tar.gz", 'r:gz').extractall("data/")
 
-def load_labled_data(grayscale = False):
+def load_labeld_data(grayscale = False):
     """
     The value of labels should start from 0
     Do we need to normalize the data to be between 0-1? no need currently, otherwise double value needs more memory
