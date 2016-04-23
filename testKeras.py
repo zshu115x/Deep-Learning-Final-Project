@@ -1,6 +1,6 @@
 
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Convolution2D, MaxPooling2D, Flatten, AutoEncoder
+from keras.layers import Dense, Dropout, Activation, Convolution2D, MaxPooling2D, Flatten
 from keras.optimizers import SGD
 from keras.utils import np_utils
 from sklearn import cross_validation, metrics
@@ -34,50 +34,45 @@ def show_confusionMatrix(model, inputs, labels):
     :param labels:
     :return:
     """
-    get_last_layer_output = K.function([model.layers[0].input], [model.layers[-1].get_output(train=False)])
-    output = get_last_layer_output([inputs])[0]
+    get_last_layer_output = K.function([model.layers[0].input, K.learning_phase()], model.layers[-1].output)
+    output = get_last_layer_output([inputs, 0])
 
     print udf_matrix(udf_softmax(labels), udf_softmax(output))
 
 def creat_model():
     model = Sequential()
 
-    model.add(Convolution2D(16, 11, 11, border_mode="valid", input_shape=(n_channels, 96, 96)))
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Convolution2D(32, 10, 10))
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Convolution2D(64, 5, 5))
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(1, 1)))
+    model.add(Convolution2D(16, 11, 11, border_mode="valid", input_shape=(96, 96, n_channels),
+                            activation="relu", dim_ordering="tf"))
+    model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
+    model.add(Convolution2D(32, 10, 10, activation="relu", dim_ordering="tf"))
+    model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
+    model.add(Convolution2D(64, 5, 5, activation="relu", dim_ordering="tf"))
+    model.add(MaxPooling2D(pool_size=(1, 1), dim_ordering="tf"))
     model.add(Dropout(0.25))
 
     model.add(Flatten())
-    model.add(Dense(1000))
-    model.add(Activation("relu"))
-    model.add(Dense(100))
-    model.add(Activation("relu"))
+    model.add(Dense(1000, activation="relu"))
+    model.add(Dense(100, activation="relu"))
     model.add(Dropout(0.4))
 
-    model.add(Dense(10))
-    model.add(Activation("softmax"))
+    model.add(Dense(10, activation="softmax"))
 
     sgd = SGD(lr=0.1, momentum=0.8, nesterov=True)
-    model.compile(loss="msle", optimizer=sgd)
+    model.compile(loss="msle", optimizer=sgd, metrics=["accuracy"])
     return model
 
 def data_loader():
     train_inputs, train_labels, test_inputs, test_labels = load_labeld_data(grayscale)
 
-    if grayscale:
-        train_inputs = train_inputs.reshape(len(train_inputs),n_channels,96,96)
-        test_inputs = test_inputs.reshape(len(test_inputs), n_channels, 96, 96)
-    else:
-        """transform (96, 96, 3) to (3, 96, 96)"""
-        train_inputs = np.rollaxis(train_inputs, axis = 3, start=1)
-        test_inputs = np.rollaxis(test_inputs, axis = 3, start=1)
-    # convert class vactors to binary class matrices
+    # if grayscale:
+    #     train_inputs = train_inputs.reshape(len(train_inputs),n_channels,96,96)
+    #     test_inputs = test_inputs.reshape(len(test_inputs), n_channels, 96, 96)
+    # else:
+    #     """transform (96, 96, 3) to (3, 96, 96)"""
+    #     train_inputs = np.rollaxis(train_inputs, axis = 3, start=1)
+    #     test_inputs = np.rollaxis(test_inputs, axis = 3, start=1)
+    # # convert class vactors to binary class matrices
     train_labels = np_utils.to_categorical(train_labels, 10)
     test_labels = np_utils.to_categorical(test_labels, 10)
 
@@ -96,7 +91,7 @@ def CV_run(train_inputs, train_labels, n_folds = 10):
         cv_valid_labels = train_labels[validCV]
         model = creat_model()
         hist = model.fit(cv_train_inputs, cv_train_labels,
-              batch_size=50, nb_epoch=20, verbose=1, show_accuracy=True, validation_data=(cv_valid_inputs, cv_valid_labels))
+              batch_size=50, nb_epoch=20, verbose=1, validation_data=(cv_valid_inputs, cv_valid_labels))
 
         hists_cv.append(hist.history.values())
         i += 1
@@ -107,10 +102,14 @@ def CV_run(train_inputs, train_labels, n_folds = 10):
 def run(train_inputs, train_labels, test_inputs, test_labels):
     model = creat_model()
 
-    hist = model.fit(train_inputs, train_labels, batch_size=50, nb_epoch=50,
-                     verbose=1, show_accuracy=True, validation_data=(test_inputs, test_labels))
+    hist = model.fit(train_inputs, train_labels, batch_size=50, nb_epoch=20,
+                     verbose=1, validation_data=(test_inputs, test_labels))
 
     show_confusionMatrix(model, test_inputs, test_labels)
 
-    with open('data/log.txt', 'w') as outfile:
-        json.dump(hist, outfile)
+    # with open('data/log.txt', 'w') as outfile:
+    #     json.dump(hist, outfile)
+
+train_inputs, train_labels, test_inputs, test_labels =  data_loader()
+
+run(train_inputs, train_labels, test_inputs, test_labels)
