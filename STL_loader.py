@@ -39,9 +39,12 @@ def load_labeld_data(grayscale = False):
     else:
         return train_inputs/255.0, train_labels - 1, test_inputs/255.0, test_labels - 1
 
-def load_unlabeld_data():
+def load_unlabeld_data(grayscale = False):
     data = stl10_input.read_all_images(unlabeled_X_path)
-    return data
+    if grayscale:
+        return grayScaler(data)/255.0
+    else:
+        return data/255.0
 
 # images = stl10_input.read_labels(train_y_path)
 # print images.shape
@@ -58,16 +61,5 @@ def grayScaler(data):
     :param data:
     :return:
     """
-    return np.dot(data, np.array([0.299, 0.587, 0.114]))
-
-# train_inputs, train_labels, test_inputs, test_labels = load_labled_data(grayscale=True)
-#
-# stl10_input.plot_image(train_inputs[0])
-#
-# stl10_input.plot_image(np.transpose(train_inputs[0])[0])
-
-# [np.transpose(x) for x in train_inputs]
-
-# print train_inputs.shape
-
+    return np.dot(data, np.array([[0.299], [0.587], [0.114]]))
 
