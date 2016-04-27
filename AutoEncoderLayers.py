@@ -6,7 +6,6 @@ from theano.tensor.nnet.neighbours import images2neibs, neibs2images
 import theano.tensor as T
 import theano
 
-batch_size = 5
 dtensor5 = T.TensorType('float32', (False,) * 5)
 
 class DeConvAfterDownSampling(Layer):

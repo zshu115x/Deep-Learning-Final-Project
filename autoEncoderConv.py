@@ -81,17 +81,20 @@ def train1():
 
     decoder = DeConvAfterDownSampling(1, filter_size, filter_size,
                                       activation="sigmoid",dim_ordering="tf")(encoder)
+
     model = Model(input=inputs, output=decoder)
-    sgd = SGD(lr=0.01)
+
+    sgd = SGD(lr=0.1, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss=Conv_AutoEncoder_mse_new)
 
-    unlabeled_data = load_unlabeld_data(grayscale=True)
+    unlabeled_data = load_unlabeld_data(grayscale=True)  ### only load 2000 by default, if you wanna more,
+    ### go to the function, and change the number
     train_data = unlabeled_data[:100]
     valid_data = unlabeled_data[100:200]
-    # train_data = unlabeled_data[:80000]
-    # valid_data = unlabeled_data[80000:90000]
-    # test_data = unlabeled_data[90000:10000]
-    model.fit(train_data, train_data, batch_size=10,
+    # train_data = unlabeled_data[:90000]
+    # # valid_data = unlabeled_data[80000:90000]
+    # valid_data = unlabeled_data[90000:]
+    model.fit(train_data, train_data, batch_size=5,
               nb_epoch=1, verbose=1, validation_data=(valid_data, valid_data))
 
     # save all weights
@@ -106,28 +109,6 @@ def train1():
     with open('data/encoder_weights.pickle', 'wb') as f:
         cPickle.dump(encoder_weights, f)
         f.close()
-
-def train():
-    model = Sequential()
-    model.add(Convolution2D(16, filter_size, filter_size, input_shape=(96, 96, 1), activation="sigmoid",
-                            border_mode="valid", dim_ordering="tf"))
-    model.add(DeConvAfterDownSampling(1, filter_size, filter_size,
-                                      activation="sigmoid",dim_ordering="tf"))
-
-    sgd = SGD(lr=0.01, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss=Conv_AutoEncoder_mse_new, metrics=["accuracy"])
-
-    unlabeled_data = load_unlabeld_data(grayscale=True) ### only load 2000 by default, if you wanna more,
-                                                        ### go to the function, and change the number
-    train_data = unlabeled_data[:100]
-    valid_data = unlabeled_data[100:200]
-    # train_data = unlabeled_data[:80000]
-    # valid_data = unlabeled_data[80000:90000]
-    # test_data = unlabeled_data[90000:10000]
-    model.fit(train_data, train_data, batch_size=5,
-              nb_epoch=1, verbose=1, validation_data=(valid_data, valid_data))
-
-    model.save_weights("data/autoEncoderModel.txt")
 
 train1()
 
