@@ -3,6 +3,7 @@ from keras.layers import Dense, Dropout, Activation, Convolution2D, MaxPooling2D
 from keras.optimizers import SGD
 from keras.utils import np_utils
 from keras import backend as K
+from keras import callbacks
 import numpy as np
 from STL_loader import load_unlabeld_data, load_labeld_data
 from keras.objectives import binary_crossentropy
@@ -13,7 +14,7 @@ import theano.tensor as T
 import sys
 import theano
 import cPickle
-sys.setrecursionlimit(10000)
+# sys.setrecursionlimit(10000)
 theano.tensor.config.exception_verbosity = "high"
 
 
@@ -72,6 +73,18 @@ def Conv_AutoEncoder_mse_new(y_true, y_pred):
     y_true = images2neibs(y_true, neib_shape=(filter_size, filter_size), neib_step=(1, 1))
 
     return K.mean(K.square(y_pred[0][0]-y_true))
+
+def Conv_AutoEncoder_mse_new_2(y_true, y_pred):
+    y_true = y_true.dimshuffle(3, 0, 1, 2)
+    y_true_shape = y_true.shape
+    y_true = K.reshape(y_true, (y_true_shape[0], y_true_shape[1], 1, y_true_shape[2], y_true_shape[3]))
+
+    def fn(y):
+        return images2neibs(y, neib_shape=(filter_size, filter_size), neib_step=(1, 1))
+    results,_= scan(fn=fn, sequences=y_true)
+
+    return K.mean(K.square(y_pred[0]-y_true))
+
 def train1():
     inputs = Input(shape=(96, 96, 1))
     encoder = Convolution2D(16, filter_size, filter_size, activation="sigmoid",
@@ -94,8 +107,9 @@ def train1():
     # train_data = unlabeled_data[:90000]
     # # valid_data = unlabeled_data[80000:90000]
     # valid_data = unlabeled_data[90000:]
-    model.fit(train_data, train_data, batch_size=5,
-              nb_epoch=1, verbose=1, validation_data=(valid_data, valid_data))
+    cb = callbacks.EarlyStopping(monitor='val_loss', patience=0, verbose=0, mode='min')
+    hist = model.fit(train_data, train_data, batch_size=50,
+              nb_epoch=5, verbose=1, callbacks=[cb], validation_data=(valid_data, valid_data))
 
     # save all weights
     model.save_weights("data/autoEncoderConv_weights.h5", overwrite=True)
@@ -109,6 +123,12 @@ def train1():
     with open('data/encoder_weights.pickle', 'wb') as f:
         cPickle.dump(encoder_weights, f)
         f.close()
+
+    log = hist.history.values()
+    with open('data/log.pickle', 'wb') as f:
+        cPickle.dump(log, f)
+        f.close()
+
 
 train1()
 

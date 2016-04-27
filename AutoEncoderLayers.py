@@ -83,9 +83,9 @@ class DeConvAfterDownSampling(Layer):
         # rows = rows
         # cols = cols
         if self.dim_ordering == 'th':
-            return (1, 1, None, self.nb_row*self.nb_col)
+            return (1, self.nb_filter, None, self.nb_row*self.nb_col)
         elif self.dim_ordering == 'tf':
-            return (1, 1, None, self.nb_row*self.nb_col)
+            return (1, self.nb_filter, None, self.nb_row*self.nb_col)
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
 
@@ -94,9 +94,9 @@ class DeConvAfterDownSampling(Layer):
         x = K.resize_images(x, self.nb_row, self.nb_col, self.dim_ordering)
         conv_out = self.deconv2d(x=x, kernel=self.W, dim_ordering=self.dim_ordering, filter_shape=self.W_shape)
         if self.dim_ordering == 'th':
-            output = conv_out + K.reshape(self.b, (self.nb_filter, 1))
+            output = conv_out + K.reshape(self.b, (self.nb_filter, 1, 1))
         elif self.dim_ordering == 'tf':
-            output = conv_out + K.reshape(self.b, (1, self.nb_filter))
+            output = conv_out + K.reshape(self.b, (self.nb_filter, 1, 1))
             # output = conv_out + self.b
         else:
             raise Exception('Invalid dim_ordering: ' + self.dim_ordering)
@@ -206,7 +206,7 @@ def get_deconv_out_new(inputs, filters):
     inputs_shape = inputs.shape
     filters_shape = filters.shape
     # img = K.reshape(inputs, (inputs_shape[0], 1, inputs_shape[1], inputs_shape[2]))
-    kernel = K.reshape(filters, (1, filters_shape[-2]*filters_shape[-1]))
+    kernel = K.reshape(filters, (filters_shape[0], 1, filters_shape[-2]*filters_shape[-1]))
     # def fn(i, k):
     #     i = K.reshape(i, (1, 1, i.shape[0], i.shape[1]))
     #     neibs = images2neibs(i, neib_shape=(filters_shape[-2], filters_shape[-1]),
@@ -218,8 +218,10 @@ def get_deconv_out_new(inputs, filters):
     neibs = images2neibs(inputs, neib_shape=(filters_shape[-2], filters_shape[-1]),
                          neib_step=(filters_shape[-2], filters_shape[-1]))
 
-
-    results = neibs * kernel
+    def fn(k, n):
+        return n*k
+    results,_ = theano.scan(fn=fn, sequences=kernel, non_sequences=neibs)
+    # results = neibs * kernel
 
     # results_shape = results.shape
     return results
