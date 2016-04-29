@@ -83,24 +83,24 @@ def Conv_AutoEncoder_mse_new_2(y_true, y_pred):
         return images2neibs(y, neib_shape=(filter_size, filter_size), neib_step=(1, 1))
     results,_= scan(fn=fn, sequences=y_true)
 
-    return K.mean(K.square(y_pred[0]-y_true))
+    return K.mean(K.square(y_pred[0]-results))
 
 def train1():
-    inputs = Input(shape=(96, 96, 1))
+    inputs = Input(shape=(96, 96, 3))
     encoder = Convolution2D(16, filter_size, filter_size, activation="sigmoid",
                             border_mode="valid", dim_ordering="tf")(inputs)
 
     # decoder = UpSampling2D(size=(filter_size, filter_size), dim_ordering="tf")(encoder)
 
-    decoder = DeConvAfterDownSampling(1, filter_size, filter_size,
+    decoder = DeConvAfterDownSampling(3, filter_size, filter_size,
                                       activation="sigmoid",dim_ordering="tf")(encoder)
 
     model = Model(input=inputs, output=decoder)
 
     sgd = SGD(lr=0.1, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss=Conv_AutoEncoder_mse_new)
+    model.compile(optimizer=sgd, loss=Conv_AutoEncoder_mse_new_2)
 
-    unlabeled_data = load_unlabeld_data(grayscale=True)  ### only load 2000 by default, if you wanna more,
+    unlabeled_data = load_unlabeld_data(grayscale=False)  ### only load 2000 by default, if you wanna more,
     ### go to the function, and change the number
     train_data = unlabeled_data[:100]
     valid_data = unlabeled_data[100:200]
@@ -108,26 +108,26 @@ def train1():
     # # valid_data = unlabeled_data[80000:90000]
     # valid_data = unlabeled_data[90000:]
     cb = callbacks.EarlyStopping(monitor='val_loss', patience=0, verbose=0, mode='min')
-    hist = model.fit(train_data, train_data, batch_size=50,
+    hist = model.fit(train_data, train_data, batch_size=5,
               nb_epoch=5, verbose=1, callbacks=[cb], validation_data=(valid_data, valid_data))
 
-    # save all weights
-    model.save_weights("data/autoEncoderConv_weights.h5", overwrite=True)
-
-    # save the architecture of the model
-    json_string = model.to_json()
-    open("data/autoEncoderConv_architecture.json", "w").write(json_string)
-
-    # save encoder layer's weights
-    encoder_weights = model.layers[1].get_weights()
-    with open('data/encoder_weights.pickle', 'wb') as f:
-        cPickle.dump(encoder_weights, f)
-        f.close()
-
-    log = hist.history.values()
-    with open('data/log.pickle', 'wb') as f:
-        cPickle.dump(log, f)
-        f.close()
+    # # save all weights
+    # model.save_weights("data/autoEncoderConv_weights.h5", overwrite=True)
+    #
+    # # save the architecture of the model
+    # json_string = model.to_json()
+    # open("data/autoEncoderConv_architecture.json", "w").write(json_string)
+    #
+    # # save encoder layer's weights
+    # encoder_weights = model.layers[1].get_weights()
+    # with open('data/encoder_weights.pickle', 'wb') as f:
+    #     cPickle.dump(encoder_weights, f)
+    #     f.close()
+    #
+    # log = hist.history.values()
+    # with open('data/log.pickle', 'wb') as f:
+    #     cPickle.dump(log, f)
+    #     f.close()
 
 
 train1()

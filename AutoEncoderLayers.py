@@ -103,7 +103,7 @@ class DeConvAfterDownSampling(Layer):
         output = self.activation(output)
         # return output
         results_shape = output.shape
-        return output.reshape((1, 1, results_shape[0], results_shape[1]))
+        return output.reshape((1, results_shape[0], results_shape[1], results_shape[2]))
 
     def deconv2d(self, x, kernel, dim_ordering='th',
            image_shape=None, filter_shape=None):
@@ -206,7 +206,7 @@ def get_deconv_out_new(inputs, filters):
     inputs_shape = inputs.shape
     filters_shape = filters.shape
     # img = K.reshape(inputs, (inputs_shape[0], 1, inputs_shape[1], inputs_shape[2]))
-    kernel = K.reshape(filters, (filters_shape[0], 1, filters_shape[-2]*filters_shape[-1]))
+    kernel = K.reshape(filters, (filters_shape[0], 1, filters_shape[1]*filters_shape[2]))
     # def fn(i, k):
     #     i = K.reshape(i, (1, 1, i.shape[0], i.shape[1]))
     #     neibs = images2neibs(i, neib_shape=(filters_shape[-2], filters_shape[-1]),
@@ -215,8 +215,8 @@ def get_deconv_out_new(inputs, filters):
     #     return neibs
     # results,_ = theano.scan(fn=fn, sequences=inputs, non_sequences=kernel)
 
-    neibs = images2neibs(inputs, neib_shape=(filters_shape[-2], filters_shape[-1]),
-                         neib_step=(filters_shape[-2], filters_shape[-1]))
+    neibs = images2neibs(inputs, neib_shape=(filters_shape[1], filters_shape[2]),
+                         neib_step=(filters_shape[1], filters_shape[2]))
 
     def fn(k, n):
         return n*k
