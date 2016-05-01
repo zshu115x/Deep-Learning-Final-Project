@@ -48,7 +48,7 @@ def load_unlabeld_data(grayscale = False):
         return data[:2000]/255.0
 
 def load_intermediate_data(path, grayscale = False):
-    data = np.fromfile(path, dtype=np.float32)
+    data = np.save(path)
     # data = open(path).read()
     if grayscale:
         return grayScaler(data)
