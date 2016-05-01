@@ -4,6 +4,7 @@ load STL-10 binary data set
 import gzip
 import tarfile
 import numpy as np
+import cPickle
 
 # from theano import function as T_function
 # import theano.tensor as T
@@ -42,9 +43,18 @@ def load_labeld_data(grayscale = False):
 def load_unlabeld_data(grayscale = False):
     data = stl10_input.read_all_images(unlabeled_X_path)
     if grayscale:
-        return grayScaler(data)/255.0
+        return grayScaler(data[:2000])/255.0
     else:
-        return data/255.0
+        return data[:2000]/255.0
+
+def load_intermediate_data(path, grayscale = False):
+    data = np.fromfile(path, dtype=np.float32)
+    # data = open(path).read()
+    if grayscale:
+        return grayScaler(data)
+    else:
+        return data
+
 
 # images = stl10_input.read_labels(train_y_path)
 # print images.shape
@@ -62,4 +72,3 @@ def grayScaler(data):
     :return:
     """
     return np.dot(data, np.array([[0.299], [0.587], [0.114]]))
-
