@@ -9,8 +9,8 @@ from testKeras import show_confusionMatrix, data_loader, udf_matrix, udf_softmax
 
 filter_size = 11
 
-data = load_unlabeld_data(grayscale=False)
-
+# data = load_unlabeld_data(grayscale=False)
+data = 0
 def plot_feature_maps(data, model):
 
     orig_img = data
@@ -89,13 +89,13 @@ def load_loss_log():
     print log
 
 def creat_classification_model():
-    f = open("data/encoder_weights.pickle", "rb")
+    f = open("data/encoder_weights_relu.pickle", "rb")
     encoder_weights = cPickle.load(f)
 
     model = Sequential()
 
-    model.add(Convolution2D(16, 11, 11, border_mode="valid", input_shape=(96, 96, 1),
-                            activation="sigmoid", dim_ordering="tf", weights=encoder_weights, trainable=False))
+    model.add(Convolution2D(16, 11, 11, border_mode="valid", input_shape=(96, 96, 3),
+                            activation="relu", dim_ordering="tf", weights=encoder_weights, trainable=False))
     model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
     model.add(Convolution2D(32, 10, 10, activation="relu", dim_ordering="tf"))
     model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
@@ -124,11 +124,11 @@ def run(train_inputs, train_labels, valid_inputs, valid_labels):
     open("data/classification_model_architecture.json", "w").write(json_string)
 
     log = hist.history.values()
-    with open('data/log_classification.pickle', 'wb') as f:
+    with open('data/log_classification_layer1_relu_colors.pickle', 'wb') as f:
         cPickle.dump(log, f)
         f.close()
-    # test_pred = model.predict(test_inputs, batch_size=50)
-    # print udf_matrix(udf_softmax(test_labels), udf_softmax(test_pred))
+    test_pred = model.predict(test_inputs, batch_size=50)
+    print udf_matrix(udf_softmax(test_labels), udf_softmax(test_pred))
 
 train_inputs, train_labels, test_inputs, test_labels = data_loader(grayscale=True)
 

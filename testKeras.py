@@ -6,6 +6,8 @@ from keras.utils import np_utils
 from sklearn import cross_validation, metrics
 from keras import backend as K
 
+import cPickle
+
 from STL_loader import load_labeld_data
 
 import numpy as np
@@ -42,27 +44,40 @@ def show_confusionMatrix(model, inputs, labels):
 def creat_model():
     model = Sequential()
 
-    model.add(Convolution2D(16, 11, 11, border_mode="valid", input_shape=(96, 96, n_channels),
-                            activation="relu", dim_ordering="tf"))
+    model.add(Convolution2D(32, 11, 11, input_shape=(96, 96, n_channels),
+                            activation="relu", border_mode="valid", dim_ordering="tf"))
     model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
-    model.add(Convolution2D(32, 10, 10, activation="relu", dim_ordering="tf"))
+    # model.add(Dropout(0.25))
+
+
+    model.add(Convolution2D(64, 10, 10, activation="relu", border_mode="valid", dim_ordering="tf"))
     model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
-    model.add(Convolution2D(64, 5, 5, activation="relu", dim_ordering="tf"))
-    model.add(MaxPooling2D(pool_size=(1, 1), dim_ordering="tf"))
+    # model.add(Dropout(0.25))
+
+    model.add(Convolution2D(128, 8, 8, activation="relu", border_mode="valid", dim_ordering="tf"))
+    model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
+
+    model.add(Convolution2D(256, 2, 2, activation="relu", border_mode="valid", dim_ordering="tf"))
+    model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
     model.add(Dropout(0.25))
 
+
     model.add(Flatten())
-    model.add(Dense(1000, activation="relu"))
-    model.add(Dense(100, activation="relu"))
-    model.add(Dropout(0.4))
+
+    model.add(Dense(512, activation="relu"))
+    model.add(Dropout(0.5))
+    model.add(Dense(256, activation="relu"))
+    model.add(Dropout(0.5))
+    model.add(Dense(128, activation="relu"))
+    model.add(Dropout(0.5))
 
     model.add(Dense(10, activation="softmax"))
 
-    sgd = SGD(lr=0.1, momentum=0.8, nesterov=True)
+    sgd = SGD(lr=0.25, momentum=0.9, nesterov=True)
     model.compile(loss="msle", optimizer=sgd, metrics=["accuracy"])
     return model
 
-def data_loader():
+def data_loader(grayscale=False):
     train_inputs, train_labels, test_inputs, test_labels = load_labeld_data(grayscale)
 
     # if grayscale:
@@ -99,17 +114,25 @@ def CV_run(train_inputs, train_labels, n_folds = 10):
         json.dump(hists_cv, outfile)
 
 
-def run(train_inputs, train_labels, test_inputs, test_labels):
+def run():
     model = creat_model()
 
-    hist = model.fit(train_inputs, train_labels, batch_size=50, nb_epoch=20,
-                     verbose=1, validation_data=(test_inputs, test_labels))
+    train_inputs, train_labels, test_inputs, test_labels = data_loader()
 
-    show_confusionMatrix(model, test_inputs, test_labels)
+    valid_inputs = train_inputs[4000:]
+    valid_labels = train_labels[4000:]
+    train_inputs = train_inputs[:4000]
+    train_labels = train_labels[:4000]
 
-    # with open('data/log.txt', 'w') as outfile:
-    #     json.dump(hist, outfile)
+    hist = model.fit(train_inputs, train_labels, batch_size=50, nb_epoch=100,
+                     verbose=1, validation_data=(valid_inputs, valid_labels))
 
-train_inputs, train_labels, test_inputs, test_labels =  data_loader()
+    log = hist.history.values()
 
-run(train_inputs, train_labels, test_inputs, test_labels)
+    with open('data/log/log_new_model_classification.pickle', 'w') as outfile:
+        cPickle.dump(log, outfile)
+
+    # test_pred = model.predict(test_inputs, batch_size=50)
+    # print udf_matrix(udf_softmax(test_labels), udf_softmax(test_pred))
+
+run()

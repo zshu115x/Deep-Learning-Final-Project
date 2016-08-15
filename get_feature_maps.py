@@ -70,9 +70,9 @@ def model3():
                             weights=encoder_weights_layer2, trainable=False))
     model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
 
-    model.add(Convolution2D(64, 5, 5, activation="sigmoid", dim_ordering="tf",
+    model.add(Convolution2D(64, 6, 6, activation="sigmoid", dim_ordering="tf",
                             weights=encoder_weights_layer3, trainable=False))
-    model.add(MaxPooling2D(pool_size=(1, 1), dim_ordering="tf"))
+    model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="tf"))
 
     sgd = SGD(lr=0.1, momentum=0.8, nesterov=True)
     model.compile(loss="msle", optimizer=sgd)
@@ -84,7 +84,7 @@ m3 = model3()
 
 data = load_unlabeld_data(grayscale=False)
 
-orig_img = data[3]
+orig_img = data[5]
 plt.subplot(8, 16, 8)
 plt.imshow(orig_img, cmap=plt.cm.gray)
 orig_shape = orig_img.shape
