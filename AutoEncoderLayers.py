@@ -8,7 +8,7 @@ import theano
 
 dtensor5 = T.TensorType('float32', (False,) * 5)
 
-class DeConvAfterDownSampling(Layer):
+class DeConvLayer(Layer):
     """
     upsampling layer
     """
@@ -32,7 +32,7 @@ class DeConvAfterDownSampling(Layer):
 
         self.input_spec = [InputSpec(ndim=4)]
         self.initial_weights = weights
-        super(DeConvAfterDownSampling, self).__init__(**kwargs)
+        super(DeConvLayer, self).__init__(**kwargs)
 
     def build(self, input_shape):
         if self.dim_ordering == 'th':

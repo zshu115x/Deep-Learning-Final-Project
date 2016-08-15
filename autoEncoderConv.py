@@ -7,7 +7,7 @@ from keras import callbacks
 import numpy as np
 from STL_loader import load_unlabeld_data, load_labeld_data
 from keras.objectives import binary_crossentropy
-from AutoEncoderLayers import DeConvAfterDownSampling
+from AutoEncoderLayers import DeConvLayer
 from theano.tensor.nnet.neighbours import images2neibs, neibs2images
 from theano import typed_list, scan
 import theano.tensor as T
@@ -92,8 +92,8 @@ def train1():
 
     # decoder = UpSampling2D(size=(filter_size, filter_size), dim_ordering="tf")(encoder)
 
-    decoder = DeConvAfterDownSampling(3, filter_size, filter_size,
-                                      activation="sigmoid",dim_ordering="tf")(encoder)
+    decoder = DeConvLayer(3, filter_size, filter_size,
+                          activation="sigmoid", dim_ordering="tf")(encoder)
 
     model = Model(input=inputs, output=decoder)
 
